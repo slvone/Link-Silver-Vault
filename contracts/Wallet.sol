@@ -1,0 +1,136 @@
+// Address is the owner
+address owner;
+
+struct WithdrawlStruct {
+address to;
+uint amount;
+}
+
+// create an object for senders struct Senders {
+bool allowed;
+uint amount_sends;
+mapping(uint => WithdrawlStruct) withdrawls;
+}
+
+// mapping to determine if sender is allowed to send funds
+mapping(address => Senders) isAllowedToSendFundsMapping;
+
+// event for deposit and for withdraw
+event Deposit(address _sender, uint amount);
+event Withdraw(address _sender, uint amount, address _beneficiary);
+
+// set the owner as soon as the wallet is created
+function SimpleWallet() {
+owner = msg.sender;
+}
+
+// this anonymous function is called when the contract receives funds from an address that is allowed to send funds
+// the msg.sender needs to be the owner and allowed to send funds to deposit them
+// we also emit an event called deposit and declare the msg sender and the value
+function() {
+if(isAllowedToSend(msg.sender)) {
+Deposit(msg.sender, msg.value);
+} else {
+throw;
+}
+}
+
+// Someone that is allowed to send funds is allowed to send
+// in this case if it is the owner or the boolean mapping is true
+// their balance must be higher than the event
+// if it goes through we emit a withdraw event and return the balance
+
+function sendFunds(uint amount, address receiver) returns (uint) {
+if(isAllowedToSend(msg.sender)) {
+if(this.balance >= amount) {
+if(!receiver.send(amount)) {
+throw;
+}
+Withdraw(msg.sender, amount, receiver);
+
+// log each withdrawl, receiver, amount
+isAllowedToSendFundsMapping[msg.sender].amount_sends++;
+isAllowedToSendFundsMapping[msg.sender].withdrawls[
+isAllowedToSendFundsMapping[msg.sender].amount_sends].to = receiver;
+isAllowedToSendFundsMapping[msg.sender].withdrawls[
+isAllowedToSendFundsMapping[msg.sender].amount_sends].amount = amount;
+return this.balance;
+}
+}
+}
+
+// Allowed to send funds when the boolean mapping is set to true
+function allowAddressToSendMoney(address _address) {
+if(msg.sender == owner) {
+isAllowedToSendFundsMapping[_address].allowed = true;
+}
+}
+
+// Not allowed to send funds when the boolean mapping is set to false
+function disallowAddressToSendMoney(address _address) {
+if(msg.sender == owner) {
+isAllowedToSendFundsMapping[_address].allowed = false;
+}
+}
+
+// Check function which returns the boolean value
+function isAllowedToSend(address _address) constant returns (bool) {
+return isAllowedToSendFundsMapping[_address].allowed || _address == owner;
+}
+
+        // During first unlock attempt fetch total number of locked tokens.
+        if (tokensCreated == 0)
+            tokensCreated = lnks.balanceOf(this);
+
+        var allocation = allocations[msg.sender];
+        allocations[msg.sender] = 0;
+        var toTransfer = tokensCreated * allocation / totalAllocations;
+
+// check to make sure the msg.sender is the owner or it will suicide the contract and return funds to the owner
+function killWallet() {
+if(msg.sender == owner) {
+suicide(owner);
+}
+
+    function channelManagerAddresses()
+        constant
+        returns (address[])
+    {
+        uint i;
+        address token_address;
+        address[] memory result;
+
+        result = new address[](tokens.length);
+
+        for (i = 0; i < tokens.length; i++) {
+            token_address = tokens[i];
+            result[i] = registry[token_address];
+        }
+
+        return result;
+    }
+
+    function () { revert(); }
+    
+     function initialize(IMarket _market, address _bondHolder, uint256 _bondAmount, bytes32 _payoutDistributionHash) public beforeInitialized returns (bool) {
+        endInitialization();
+        market = _market;
+        bondHolder = _bondHolder;
+        disputedPayoutDistributionHash = _payoutDistributionHash;
+        bondRemainingToBePaidOut = _bondAmount * 2;
+        return true;
+    }
+
+    function withdraw() public returns (bool) {
+        require(msg.sender == bondHolder);
+        bool _isFinalized = market.getReportingState() == IMarket.ReportingState.FINALIZED;
+        require(!market.isContainerForDisputeBondToken(this) || (_isFinalized && market.getFinalPayoutDistributionHash() != disputedPayoutDistributionHash));
+        require(getUniverse().getForkingMarket() != market);
+        IReputationToken _reputationToken = getReputationToken();
+        uint256 _amountToTransfer = _reputationToken.balanceOf(this);
+        bondRemainingToBePaidOut = bondRemainingToBePaidOut.sub(_amountToTransfer);
+        _reputationToken.transfer(bondHolder, _amountToTransfer);
+        return true;
+    }
+
+}
